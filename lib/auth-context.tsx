@@ -24,7 +24,9 @@ type AuthContextValue = {
     prenom: string;
     nom: string;
     telephone: string;
-  }) => Promise<{ error: AuthError | null }>;
+    raisonSociale: string;
+    numeroTva: string;
+  }) => Promise<{ error: AuthError | Error | null }>;
   signIn: (params: {
     email: string;
     password: string;
@@ -80,19 +82,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     prenom,
     nom,
     telephone,
+    raisonSociale,
+    numeroTva,
   }: {
     email: string;
     password: string;
     prenom: string;
     nom: string;
     telephone: string;
+    raisonSociale: string;
+    numeroTva: string;
   }) {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { prenom, nom, telephone } },
     });
-    return { error };
+    if (error || !data.user) return { error };
+
+    const { error: entError } = await supabase
+      .from("entrepreneurs")
+      .insert({ profile_id: data.user.id, raison_sociale: raisonSociale, numero_tva: numeroTva });
+
+    if (entError) return { error: new Error(entError.message) };
+    return { error: null };
   }
 
   async function signIn({

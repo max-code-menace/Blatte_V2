@@ -13,24 +13,45 @@ import { StatusBar } from "expo-status-bar";
 import { Link } from "expo-router";
 import { useAuth } from "../../lib/auth-context";
 
+type Fields = {
+  prenom: string;
+  nom: string;
+  telephone: string;
+  email: string;
+  password: string;
+  raisonSociale: string;
+  numeroTva: string;
+};
+
 export default function SignUpScreen() {
   const { signUp } = useAuth();
-  const [prenom, setPrenom] = useState("");
-  const [nom, setNom] = useState("");
-  const [telephone, setTelephone] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [fields, setFields] = useState<Fields>({
+    prenom: "",
+    nom: "",
+    telephone: "",
+    email: "",
+    password: "",
+    raisonSociale: "",
+    numeroTva: "",
+  });
+  const [errors, setErrors] = useState<Partial<Fields>>({});
   const [apiError, setApiError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  function set(key: keyof Fields) {
+    return (val: string) => setFields((f) => ({ ...f, [key]: val }));
+  }
+
   function validate() {
-    const e: Record<string, string> = {};
-    if (!prenom.trim()) e.prenom = "Prénom requis";
-    if (!nom.trim()) e.nom = "Nom requis";
-    if (!telephone.trim()) e.telephone = "Téléphone requis";
-    if (!email.includes("@") || !email.includes(".")) e.email = "Email invalide";
-    if (password.length < 8) e.password = "Minimum 8 caractères";
+    const e: Partial<Fields> = {};
+    if (!fields.prenom.trim()) e.prenom = "Prénom requis";
+    if (!fields.nom.trim()) e.nom = "Nom requis";
+    if (!fields.telephone.trim()) e.telephone = "Téléphone requis";
+    if (!fields.email.includes("@") || !fields.email.includes("."))
+      e.email = "Email invalide";
+    if (fields.password.length < 8) e.password = "Minimum 8 caractères";
+    if (!fields.raisonSociale.trim()) e.raisonSociale = "Raison sociale requise";
+    if (!fields.numeroTva.trim()) e.numeroTva = "Numéro de TVA requis";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -39,7 +60,15 @@ export default function SignUpScreen() {
     if (!validate()) return;
     setLoading(true);
     setApiError("");
-    const { error } = await signUp({ email, password, prenom, nom, telephone });
+    const { error } = await signUp({
+      email: fields.email,
+      password: fields.password,
+      prenom: fields.prenom,
+      nom: fields.nom,
+      telephone: fields.telephone,
+      raisonSociale: fields.raisonSociale,
+      numeroTva: fields.numeroTva,
+    });
     if (error) setApiError(error.message);
     setLoading(false);
   }
@@ -54,100 +83,94 @@ export default function SignUpScreen() {
         <ScrollView
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View className="flex-1 px-6 py-12">
-            <Text className="text-white text-3xl font-bold mb-10">
-              Créer un compte
+          <View className="flex-1 px-6 pt-12 pb-8">
+            <Text className="text-white text-3xl font-bold mb-2">Créer un compte</Text>
+            <Text style={{ color: "#666" }} className="mb-10 text-sm">
+              Remplissez toutes les informations pour commencer.
             </Text>
 
-            <TextInput
-              className="bg-[#1A1A1A] text-white px-4 py-4 rounded-lg mb-1 border border-[#2A2A2A]"
+            {/* ─── Informations personnelles ─── */}
+            <SectionTitle>Informations personnelles</SectionTitle>
+
+            <Field
               placeholder="Prénom"
-              placeholderTextColor="#666"
-              value={prenom}
-              onChangeText={setPrenom}
+              value={fields.prenom}
+              onChangeText={set("prenom")}
+              error={errors.prenom}
             />
-            {errors.prenom ? (
-              <Text className="text-red-500 mb-3 text-sm">{errors.prenom}</Text>
-            ) : (
-              <View className="mb-3" />
-            )}
-
-            <TextInput
-              className="bg-[#1A1A1A] text-white px-4 py-4 rounded-lg mb-1 border border-[#2A2A2A]"
+            <Field
               placeholder="Nom"
-              placeholderTextColor="#666"
-              value={nom}
-              onChangeText={setNom}
+              value={fields.nom}
+              onChangeText={set("nom")}
+              error={errors.nom}
             />
-            {errors.nom ? (
-              <Text className="text-red-500 mb-3 text-sm">{errors.nom}</Text>
-            ) : (
-              <View className="mb-3" />
-            )}
-
-            <TextInput
-              className="bg-[#1A1A1A] text-white px-4 py-4 rounded-lg mb-1 border border-[#2A2A2A]"
+            <Field
               placeholder="Téléphone"
-              placeholderTextColor="#666"
-              value={telephone}
-              onChangeText={setTelephone}
+              value={fields.telephone}
+              onChangeText={set("telephone")}
+              error={errors.telephone}
               keyboardType="phone-pad"
             />
-            {errors.telephone ? (
-              <Text className="text-red-500 mb-3 text-sm">{errors.telephone}</Text>
-            ) : (
-              <View className="mb-3" />
-            )}
 
-            <TextInput
-              className="bg-[#1A1A1A] text-white px-4 py-4 rounded-lg mb-1 border border-[#2A2A2A]"
+            {/* ─── Informations de connexion ─── */}
+            <SectionTitle>Connexion</SectionTitle>
+
+            <Field
               placeholder="Email"
-              placeholderTextColor="#666"
-              value={email}
-              onChangeText={setEmail}
+              value={fields.email}
+              onChangeText={set("email")}
+              error={errors.email}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
             />
-            {errors.email ? (
-              <Text className="text-red-500 mb-3 text-sm">{errors.email}</Text>
-            ) : (
-              <View className="mb-3" />
-            )}
-
-            <TextInput
-              className="bg-[#1A1A1A] text-white px-4 py-4 rounded-lg mb-1 border border-[#2A2A2A]"
-              placeholder="Mot de passe"
-              placeholderTextColor="#666"
-              value={password}
-              onChangeText={setPassword}
+            <Field
+              placeholder="Mot de passe (minimum 8 caractères)"
+              value={fields.password}
+              onChangeText={set("password")}
+              error={errors.password}
               secureTextEntry
             />
-            {errors.password ? (
-              <Text className="text-red-500 mb-3 text-sm">{errors.password}</Text>
-            ) : (
-              <View className="mb-3" />
-            )}
+
+            {/* ─── Informations société ─── */}
+            <SectionTitle>Votre société</SectionTitle>
+
+            <Field
+              placeholder="Raison sociale"
+              value={fields.raisonSociale}
+              onChangeText={set("raisonSociale")}
+              error={errors.raisonSociale}
+              autoCapitalize="words"
+            />
+            <Field
+              placeholder="Numéro de TVA (ex: BE0123456789)"
+              value={fields.numeroTva}
+              onChangeText={set("numeroTva")}
+              error={errors.numeroTva}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
 
             {apiError ? (
               <Text className="text-red-500 mb-4 text-sm">{apiError}</Text>
             ) : null}
 
             <TouchableOpacity
-              className="rounded-lg py-4 items-center mb-6"
+              className="rounded-lg py-4 items-center mb-6 mt-2"
               style={{ backgroundColor: "#FF5500" }}
               onPress={handleSignUp}
               disabled={loading}
             >
               <Text className="font-bold text-black text-base">
-                {loading ? "..." : "S'inscrire"}
+                {loading ? "Création en cours..." : "Créer mon compte"}
               </Text>
             </TouchableOpacity>
 
             <Link href="/sign-in" asChild>
               <TouchableOpacity className="items-center">
-                <Text className="text-[#FF5500] underline">
+                <Text style={{ color: "#FF5500" }} className="underline">
                   Déjà un compte ? Se connecter
                 </Text>
               </TouchableOpacity>
@@ -156,5 +179,46 @@ export default function SignUpScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+  );
+}
+
+function SectionTitle({ children }: { children: string }) {
+  return (
+    <Text style={{ color: "#FF5500" }} className="text-xs font-bold uppercase tracking-widest mb-4 mt-2">
+      {children}
+    </Text>
+  );
+}
+
+function Field({
+  placeholder,
+  value,
+  onChangeText,
+  error,
+  ...props
+}: {
+  placeholder: string;
+  value: string;
+  onChangeText: (v: string) => void;
+  error?: string;
+  [key: string]: any;
+}) {
+  return (
+    <>
+      <TextInput
+        className="text-white px-4 py-4 rounded-lg mb-1"
+        style={{ backgroundColor: "#1A1A1A", borderWidth: 1, borderColor: error ? "#ef4444" : "#2A2A2A" }}
+        placeholder={placeholder}
+        placeholderTextColor="#555"
+        value={value}
+        onChangeText={onChangeText}
+        {...props}
+      />
+      {error ? (
+        <Text className="text-red-500 mb-3 text-xs ml-1">{error}</Text>
+      ) : (
+        <View className="mb-3" />
+      )}
+    </>
   );
 }
